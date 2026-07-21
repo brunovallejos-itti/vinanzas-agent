@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+#other directories
+pdfs/*.pdf
+faiss_index/
