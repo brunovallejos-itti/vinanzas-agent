@@ -218,6 +218,6 @@ __marimo__/
 .streamlit/secrets.toml
 
 #other directories
-pdfs/*.pdf
+pdfs/*
 !pdfs/.gitkeep
 faiss_index/

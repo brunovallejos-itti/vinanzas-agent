@@ -1,12 +1,12 @@
 import os
 import glob
-import streamlit as st
-from dotenv import load_dotenv
+import streamlit as st #type: ignore
+from dotenv import load_dotenv #type: ignore
 
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+from langchain_community.document_loaders import PyPDFLoader #type: ignore
+from langchain_google_genai import ChatGoogleGenerativeAI #type: ignore
+from langchain_core.prompts import ChatPromptTemplate #type: ignore
+from langchain_core.output_parsers import StrOutputParser #type: ignore
 
 # 1. Load Environment Variables
 load_dotenv()
