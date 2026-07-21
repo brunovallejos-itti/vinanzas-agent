@@ -219,4 +219,5 @@ __marimo__/
 
 #other directories
 pdfs/*.pdf
+!pdfs/.gitkeep
 faiss_index/
