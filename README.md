@@ -1,5 +1,7 @@
 # Agente Vinanzas
 
+Acceso público del proyecto: http://157.151.140.108:8501/
+
 Agente conversacional de inteligencia artificial diseñado para consultar información contenida en documentos PDF de forma rápida, clara y centralizada. El proyecto permite hacer preguntas en lenguaje natural sobre políticas internas, procedimientos, procesos operativos y otras guías documentadas, facilitando el acceso a información clave sin necesidad de revisar manualmente cada archivo.
 
 ## Descripción general del proyecto
