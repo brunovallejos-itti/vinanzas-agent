@@ -1,7 +1,7 @@
 import os
-import glob
 import streamlit as st #type: ignore
 from dotenv import load_dotenv #type: ignore
+from pathlib import Path
 
 from langchain_community.document_loaders import PyPDFLoader #type: ignore
 from langchain_google_genai import ChatGoogleGenerativeAI #type: ignore
@@ -11,39 +11,54 @@ from langchain_core.output_parsers import StrOutputParser #type: ignore
 # 1. Load Environment Variables
 load_dotenv()
 
-PDF_FOLDER = "pdfs"
+# Anchor PDF_FOLDER to the exact folder where app.py lives
+BASE_DIR = Path(__file__).resolve().parent
+PDF_FOLDER = BASE_DIR / "pdfs"
 
 st.set_page_config(page_title="PDF Assistant", page_icon="📄")
 st.title("📄 Local PDF Assistant")
 
-# 2. Function to load all PDFs from the 'pdfs' directory automatically
+# 2. Function to load all PDFs recursively from the 'pdfs' directory
 @st.cache_data
-def load_all_pdfs_from_folder(folder_path: str) -> tuple[str, list[str]]:
-    """Scans the specified folder and extracts text from all PDF files."""
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        return "", []
+def load_all_pdfs_from_folder(folder_input: str | Path) -> tuple[str, list[str]]:
+    """Recursively scans for valid .pdf / .PDF files, filtering out temporary or unreadable files."""
+    folder_path = Path(folder_input)
+    folder_path.mkdir(parents=True, exist_ok=True)
 
-    # Find all .pdf files in the folder
-    pdf_files = glob.glob(os.path.join(folder_path, "*.pdf"))
-    
-    if not pdf_files:
-        return "", []
+    # Search case-insensitively for .pdf and .PDF files at any subfolder depth
+    raw_pdf_files = [p for p in folder_path.rglob("*") if p.suffix.lower() == ".pdf"]
 
     combined_text = []
     loaded_filenames = []
 
-    for pdf_path in pdf_files:
-        filename = os.path.basename(pdf_path)
-        loader = PyPDFLoader(pdf_path)
-        pages = loader.load()
-        
-        # Merge text content for this file
-        file_text = f"--- Document: {filename} ---\n"
-        file_text += "\n".join([p.page_content for p in pages])
-        
-        combined_text.append(file_text)
-        loaded_filenames.append(filename)
+    for pdf_path in raw_pdf_files:
+        # Skip temporary or hidden files (like ~$doc.pdf)
+        if pdf_path.name.startswith("~$") or pdf_path.name.startswith("."):
+            continue
+
+        # Ensure the path is valid and exists on disk
+        resolved_str_path = os.path.abspath(str(pdf_path))
+        if not os.path.isfile(resolved_str_path):
+            continue
+
+        try:
+            # Relative path preserves subfolder structure (e.g. "HR Policies/Handbook.pdf")
+            relative_path = str(pdf_path.relative_to(folder_path))
+            
+            # Pass normalized absolute string path to PyPDFLoader
+            loader = PyPDFLoader(resolved_str_path)
+            pages = loader.load()
+
+            file_text = f"--- Document: {relative_path} ---\n"
+            file_text += "\n".join([p.page_content for p in pages])
+
+            combined_text.append(file_text)
+            loaded_filenames.append(relative_path)
+            
+        except Exception as e:
+            # Skip corrupted/unreadable PDFs gracefully without crashing the server
+            st.warning(f"Skipped unreadable file '{pdf_path.name}': {e}")
+            continue
 
     full_context = "\n\n".join(combined_text)
     return full_context, loaded_filenames
@@ -53,10 +68,10 @@ pdf_context, loaded_files = load_all_pdfs_from_folder(PDF_FOLDER)
 
 # 3. Handle status display
 if not loaded_files:
-    st.warning(f"No PDFs found in the `{PDF_FOLDER}/` folder. Drop some PDF files into `{PDF_FOLDER}/` and refresh this page!")
+    st.warning(f"No PDFs found in `{PDF_FOLDER}`. Drop some PDF files into the `pdfs/` directory and refresh this page!")
     st.stop()
 else:
-    st.success(f"Loaded {len(loaded_files)} document(s): {', '.join(loaded_files)}")
+    st.success(f"Loaded {len(loaded_files)} document(s) from `{PDF_FOLDER.name}/`!")
 
 # 4. Initialize Gemini Model
 @st.cache_resource
